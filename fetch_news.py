@@ -3,7 +3,7 @@
 全球垃圾焚烧发电(Waste-to-Energy / 焚烧)行业日报
 -------------------------------------------------
 流程:
-  1. 从 Google News RSS 按关键词抓取全球最新报道(免费,无需密钥)
+  1. 从必应新闻 RSS 按中文关键词抓取国内外报道(免费,无需密钥,链接国内可直接打开)
   2. 调用 AI 接口,把英文/外文报道筛选 + 翻译 + 摘要成中文
   3. 生成一个排版干净的中文网页 index.html
 
@@ -30,15 +30,15 @@ LLM_API_KEY = os.environ.get("LLM_API_KEY", "").strip()
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com").rstrip("/")
 LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek-chat")
 
-# 抓取关键词。多语言、多角度,尽量覆盖全球。可自行增删。
+# 抓取关键词(以中文为主,链接多为国内可直接打开的中文网站)。可自行增删。
 QUERIES = [
-    "waste-to-energy plant",
-    "energy from waste incineration",
-    "waste incineration power plant project",
-    "municipal solid waste incineration",
-    "garbage incineration power",
     "垃圾焚烧发电",
-    "垃圾焚烧 项目",
+    "垃圾焚烧发电 项目",
+    "生活垃圾焚烧 投产",
+    "垃圾焚烧发电 中标",
+    "垃圾焚烧发电 环评",
+    "国外 垃圾焚烧发电",
+    "海外 垃圾焚烧 项目",
 ]
 
 # 每个关键词最多取多少条原始结果
@@ -52,10 +52,29 @@ RECENT_DAYS = 3
 # ----------------------------------------------------------------------------
 # 第一步:抓取原始新闻
 # ----------------------------------------------------------------------------
-def google_news_rss_url(query: str) -> str:
+def bing_news_rss_url(query: str) -> str:
     q = urllib.parse.quote(query)
-    # hl=zh-CN 让 Google 倾向返回带中文界面的结果;ceid 覆盖全球
-    return f"https://news.google.com/rss/search?q={q}+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+    # 必应新闻 RSS;setlang/cc 设为中国,结果偏中文站,链接国内可直接打开
+    return (
+        f"https://www.bing.com/news/search?q={q}"
+        f"&qft=interval%3d%227%22&format=RSS&setlang=zh-CN&cc=CN"
+    )
+
+
+def resolve_link(link: str) -> str:
+    """必应有时用 bing.com/...url=真实地址 跳转,这里把真实地址还原出来。"""
+    if not link:
+        return link
+    try:
+        parsed = urllib.parse.urlparse(link)
+        if "bing.com" in parsed.netloc:
+            qs = urllib.parse.parse_qs(parsed.query)
+            for key in ("url", "u"):
+                if key in qs and qs[key]:
+                    return urllib.parse.unquote(qs[key][0])
+    except Exception:
+        pass
+    return link
 
 
 def clean_text(s: str) -> str:
@@ -75,7 +94,7 @@ def fetch_raw_items():
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=RECENT_DAYS)
 
     for q in QUERIES:
-        url = google_news_rss_url(q)
+        url = bing_news_rss_url(q)
         try:
             feed = feedparser.parse(url)
         except Exception as e:
@@ -101,17 +120,24 @@ def fetch_raw_items():
             if pub_dt and pub_dt < cutoff:
                 continue
 
+            link = resolve_link(getattr(entry, "link", ""))
+
+            # 来源:优先 RSS 自带,否则用链接域名
             source = ""
             if getattr(entry, "source", None) and getattr(entry.source, "title", None):
                 source = clean_text(entry.source.title)
-            published = ""
-            if pub_dt:
-                published = pub_dt.strftime("%Y-%m-%d")
+            if not source and link:
+                try:
+                    source = urllib.parse.urlparse(link).netloc.replace("www.", "")
+                except Exception:
+                    source = ""
+
+            published = pub_dt.strftime("%Y-%m-%d") if pub_dt else ""
 
             seen_titles.add(key)
             items.append({
                 "title": title,
-                "link": getattr(entry, "link", ""),
+                "link": link,
                 "source": source,
                 "published": published,
                 "snippet": clean_text(getattr(entry, "summary", ""))[:300],
@@ -452,7 +478,7 @@ def render_html(items, generated_at, degraded=False):
     </main>
 
     <footer>
-      <div class="big">数据来源:Google News 聚合 · AI 自动翻译整理</div>
+      <div class="big">数据来源:必应新闻聚合 · AI 自动整理</div>
       所有内容均来自公开新闻报道,点击各条「查看原文」可跳转至原始来源核实。<br>
       本页由自动化程序每日生成,仅供行业信息参考。
     </footer>
