@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>全球垃圾焚烧发电行业日报</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2733;
+    --paper: #f4f7fb;
+    --card: #ffffff;
+    --accent: #2f6fb0;       /* 国内 主蓝 */
+    --accent2: #4a99c9;      /* 国际 浅蓝/青 */
+    --accent-soft: #e6eef7;
+    --muted: #7a8794;
+    --line: #e2e8f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans SC", system-ui, sans-serif;
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(900px 500px at 85% -8%, rgba(47,111,176,.10), transparent 60%),
+      radial-gradient(700px 460px at -5% 4%, rgba(74,153,201,.08), transparent 55%),
+      var(--paper);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 22px 90px; }
+
+  /* ---------- 报头 ---------- */
+  header.masthead {
+    position: relative;
+    margin: 26px 0 0;
+    padding: 44px 34px 36px;
+    border-radius: 20px;
+    color: #f3f1e8;
+    overflow: hidden;
+    background:
+      linear-gradient(135deg, #2f6fb0 0%, #3f86c4 55%, #4fa0cf 100%);
+    box-shadow: 0 22px 48px -22px rgba(47,111,176,.5);
+  }
+  header.masthead::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
+    background-size: 16px 16px; opacity: .5; pointer-events: none;
+  }
+  .kicker {
+    font-size: 12px; letter-spacing: 4px; color: #cfe6f5;
+    text-transform: uppercase; font-weight: 500; margin-bottom: 14px;
+  }
+  h1.brand {
+    font-family: "Noto Serif SC", serif; font-weight: 900;
+    font-size: clamp(28px, 6vw, 44px); letter-spacing: 1px; line-height: 1.16;
+  }
+  .lead { margin-top: 12px; color: #e3eff7; font-size: 14.5px; font-weight: 300; max-width: 46ch; }
+  .stats { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 26px; }
+  .stat .num { font-family: "Noto Serif SC", serif; font-size: 30px; font-weight: 700; line-height: 1; }
+  .stat .lab { font-size: 12.5px; color: #cfe2f0; margin-top: 6px; letter-spacing: 1px; }
+  .updated { position: absolute; top: 22px; right: 26px; font-size: 12px; color: #cfe2f0; }
+
+  /* ---------- 筛选标签 ---------- */
+  .tabs { display: flex; gap: 10px; margin: 28px 0 6px; flex-wrap: wrap; }
+  .tab {
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+    padding: 8px 18px; border-radius: 999px; font-size: 14px; cursor: pointer;
+    font-family: inherit; transition: all .15s ease;
+  }
+  .tab:hover { border-color: var(--accent); }
+  .tab.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  .banner {
+    background: #fff4e2; border: 1px solid #f0d9a8; color: #8a5a14;
+    padding: 12px 16px; border-radius: 10px; font-size: 14px; margin: 22px 0 0;
+  }
+
+  /* ---------- 分区 ---------- */
+  .block { margin-top: 38px; }
+  .block-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .block-bar { width: 5px; height: 38px; border-radius: 4px; display: inline-block; }
+  .block-bar.domestic { background: var(--accent); }
+  .block-bar.intl { background: var(--accent2); }
+  .block-title {
+    font-family: "Noto Serif SC", serif; font-size: 23px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .block-count {
+    font-family: "Noto Sans SC"; font-size: 13px; font-weight: 500; color: var(--muted);
+    background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 1px 10px;
+  }
+  .block-sub { font-size: 12px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+
+  .feed { display: flex; flex-direction: column; gap: 18px; }
+
+  /* ---------- 卡片 ---------- */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 14px; padding: 20px 24px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .card.intl { border-left-color: var(--accent2); }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 14px 34px -16px rgba(20,48,40,.4); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; }
+  .tag { background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; padding: 3px 11px; border-radius: 6px; white-space: nowrap; }
+  .card.intl .tag { background: var(--accent2); }
+  .meta { font-size: 13px; color: var(--muted); }
+  .meta .dot { margin: 0 7px; opacity: .5; }
+  h2.title { font-family: "Noto Serif SC", serif; font-size: 20px; font-weight: 700; line-height: 1.45; margin-bottom: 8px; }
+  h2.title a { color: var(--ink); text-decoration: none; }
+  h2.title a:hover { color: var(--accent); }
+  .summary { color: #41504a; font-size: 15px; font-weight: 300; }
+  .source-link { display: inline-block; margin-top: 12px; font-size: 14px; color: var(--accent); text-decoration: none; font-weight: 500; }
+  .card.intl .source-link { color: var(--accent2); }
+  .source-link:hover { text-decoration: underline; }
+
+  .empty { padding: 40px 0; text-align: center; color: var(--muted); }
+
+  footer { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.9; }
+  footer .big { color: var(--ink); font-weight: 500; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="updated">更新时间 2026-06-09 10:54</div>
+      <div class="kicker">Global Waste-to-Energy Daily</div>
+      <h1 class="brand">全球垃圾焚烧发电行业日报</h1>
+      <p class="lead">每日自动汇集全球生活垃圾焚烧发电领域的项目、政策与技术动态,经 AI 翻译整理为中文。</p>
+      <div class="stats">
+        <div class="stat"><div class="num">2</div><div class="lab">本期总数</div></div>
+        <div class="stat"><div class="num">0</div><div class="lab">国内</div></div>
+        <div class="stat"><div class="num">2</div><div class="lab">国际</div></div>
+      </div>
+    </header>
+    <div class="banner">提示:今日 AI 整理服务暂时不可用,以下为原始抓取标题,未经翻译润色。</div>
+
+    <div class="tabs">
+      <button class="tab active" data-filter="all">全部</button>
+      <button class="tab" data-filter="domestic">国内</button>
+      <button class="tab" data-filter="intl">国际</button>
+    </div>
+
+    <main>
+      
+      <section class="block" data-block="domestic">
+        <div class="block-head">
+          <span class="block-bar domestic"></span>
+          <div>
+            <h2 class="block-title">国内动态<span class="block-count">0</span></h2>
+            <div class="block-sub">Domestic</div>
+          </div>
+        </div>
+        <div class="feed">
+          <div class="empty">本栏目暂无新内容。</div>
+        </div>
+      </section>
+      <section class="block" data-block="intl">
+        <div class="block-head">
+          <span class="block-bar intl"></span>
+          <div>
+            <h2 class="block-title">国际动态<span class="block-count">2</span></h2>
+            <div class="block-sub">International</div>
+          </div>
+        </div>
+        <div class="feed">
+          
+        <article class="card intl" data-scope="intl">
+          <div class="card-head">
+            <span class="tag">全球</span>
+            <div class="meta"><span class="src">Minichart</span><span class="dot">·</span><span class="date">2026-06-06</span></div>
+          </div>
+          <h2 class="title"><a href="https://news.google.com/rss/articles/CBMi1AFBVV95cUxOcXRMNUNJZnVWMzRicHd5MzRlYTVYV1hZTjhiVUtqVlowcnY5YnRib3RTRGdRSTNJS2x3U3lBVHg0U0Z0R3hITzZjRS1RMWk1ajJOcVFSdTNXc1pLb1F6ZUVxMG5CdVF1eWkzdU1uNjNKWmhtYkcyNFJMUkNlcnFuYUhQRnpWWTR0SENEa25ELWx1NFpGaHVSNE1KQ09HbGNlTXgxTF9BcGFfaTFoczdmUEFlWngxRHFnMnpPeW11YjZXazJxUVRWSXNPejQwSC1ZRGs4Yw?oc=5" target="_blank" rel="noopener">China Everbright Water Terminates Qingdao Waste Water Treatment Project Due to Regulatory Changes - Minichart</a></h2>
+          <p class="summary">China Everbright Water Terminates Qingdao Waste Water Treatment Project Due to Regulatory Changes Minichart</p>
+          <a class="source-link" href="https://news.google.com/rss/articles/CBMi1AFBVV95cUxOcXRMNUNJZnVWMzRicHd5MzRlYTVYV1hZTjhiVUtqVlowcnY5YnRib3RTRGdRSTNJS2x3U3lBVHg0U0Z0R3hITzZjRS1RMWk1ajJOcVFSdTNXc1pLb1F6ZUVxMG5CdVF1eWkzdU1uNjNKWmhtYkcyNFJMUkNlcnFuYUhQRnpWWTR0SENEa25ELWx1NFpGaHVSNE1KQ09HbGNlTXgxTF9BcGFfaTFoczdmUEFlWngxRHFnMnpPeW11YjZXazJxUVRWSXNPejQwSC1ZRGs4Yw?oc=5" target="_blank" rel="noopener">查看原文 →</a>
+        </article>
+
+        <article class="card intl" data-scope="intl">
+          <div class="card-head">
+            <span class="tag">全球</span>
+            <div class="meta"><span class="src">thepaper.cn</span><span class="dot">·</span><span class="date">2026-06-08</span></div>
+          </div>
+          <h2 class="title"><a href="https://news.google.com/rss/articles/CBMiYEFVX3lxTFBoaWY1X19icnNEbTFucnU1NFJ5X05DcGxyT2N3clVYdGZOT29NMkxMUzQzenczdHc4UnRpVFdlYndBd3liNC1FZ2VEQUdmRlJrdXZ4blBCWFVNLUp4RUdUMg?oc=5" target="_blank" rel="noopener">市州动态丨四县共治！西和礼县成县徽县垃圾焚烧处置网络闭环 - thepaper.cn</a></h2>
+          <p class="summary">市州动态丨四县共治！西和礼县成县徽县垃圾焚烧处置网络闭环 thepaper.cn</p>
+          <a class="source-link" href="https://news.google.com/rss/articles/CBMiYEFVX3lxTFBoaWY1X19icnNEbTFucnU1NFJ5X05DcGxyT2N3clVYdGZOT29NMkxMUzQzenczdHc4UnRpVFdlYndBd3liNC1FZ2VEQUdmRlJrdXZ4blBCWFVNLUp4RUdUMg?oc=5" target="_blank" rel="noopener">查看原文 →</a>
+        </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="big">数据来源:Google News 聚合 · AI 自动翻译整理</div>
+      所有内容均来自公开新闻报道,点击各条「查看原文」可跳转至原始来源核实。<br>
+      本页由自动化程序每日生成,仅供行业信息参考。
+    </footer>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const blocks = document.querySelectorAll('.block');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const f = t.dataset.filter;
+      blocks.forEach(b => {
+        b.classList.toggle('hidden', f !== 'all' && b.dataset.block !== f);
+      });
+    }));
+  </script>
+</body>
+</html>
