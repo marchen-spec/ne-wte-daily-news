@@ -46,19 +46,48 @@ MAX_PER_QUERY = 8
 # 最终页面最多展示多少条
 MAX_ITEMS = 25
 # 只保留最近多少天的新闻
-RECENT_DAYS = 3
+RECENT_DAYS = 7
 
 
 # ----------------------------------------------------------------------------
 # 第一步:抓取原始新闻
 # ----------------------------------------------------------------------------
+BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+
+
 def bing_news_rss_url(query: str) -> str:
     q = urllib.parse.quote(query)
     # 必应新闻 RSS;setlang/cc 设为中国,结果偏中文站,链接国内可直接打开
-    return (
-        f"https://www.bing.com/news/search?q={q}"
-        f"&qft=interval%3d%227%22&format=RSS&setlang=zh-CN&cc=CN"
-    )
+    return f"https://www.bing.com/news/search?q={q}&format=RSS&setlang=zh-CN&cc=CN&count=20"
+
+
+def google_news_rss_url(query: str) -> str:
+    q = urllib.parse.quote(query)
+    return f"https://news.google.com/rss/search?q={q}+when:7d&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
+
+
+def fetch_feed(url: str):
+    """用真实浏览器标识抓取 RSS,返回 feedparser 解析结果(失败返回 None)。"""
+    import requests
+    import feedparser
+    try:
+        resp = requests.get(
+            url,
+            headers={
+                "User-Agent": BROWSER_UA,
+                "Accept": "application/rss+xml, application/xml, text/xml, */*",
+                "Accept-Language": "zh-CN,zh;q=0.9",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return feedparser.parse(resp.content)
+    except Exception as e:
+        print(f"[警告] 请求失败 {url[:60]}... : {e}")
+        return None
 
 
 def resolve_link(link: str) -> str:
@@ -89,28 +118,18 @@ def clean_text(s: str) -> str:
 def fetch_raw_items():
     """返回去重后的原始新闻列表。每条:{title, link, source, published, snippet}"""
     import feedparser
-    seen_titles = set()
-    items = []
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=RECENT_DAYS)
 
-    for q in QUERIES:
-        url = bing_news_rss_url(q)
-        try:
-            feed = feedparser.parse(url)
-        except Exception as e:
-            print(f"[警告] 抓取失败 query={q}: {e}")
-            continue
-
+    def collect(feed, seen_titles, items, source_label):
+        added = 0
         for entry in feed.entries[:MAX_PER_QUERY]:
             title = clean_text(getattr(entry, "title", ""))
             if not title:
                 continue
-            # 简单去重(标题前 40 个字符相同视为重复)
             key = title[:40].lower()
             if key in seen_titles:
                 continue
 
-            # 时间过滤
             pub_dt = None
             if getattr(entry, "published_parsed", None):
                 try:
@@ -122,7 +141,6 @@ def fetch_raw_items():
 
             link = resolve_link(getattr(entry, "link", ""))
 
-            # 来源:优先 RSS 自带,否则用链接域名
             source = ""
             if getattr(entry, "source", None) and getattr(entry.source, "title", None):
                 source = clean_text(entry.source.title)
@@ -132,16 +150,30 @@ def fetch_raw_items():
                 except Exception:
                     source = ""
 
-            published = pub_dt.strftime("%Y-%m-%d") if pub_dt else ""
-
             seen_titles.add(key)
             items.append({
                 "title": title,
                 "link": link,
                 "source": source,
-                "published": published,
+                "published": pub_dt.strftime("%Y-%m-%d") if pub_dt else "",
                 "snippet": clean_text(getattr(entry, "summary", ""))[:300],
             })
+            added += 1
+        return added
+
+    seen_titles, items = set(), []
+
+    # 主源:Google News(能稳定返回中文新闻)。链接在页面渲染时改用百度搜索,国内可直接打开。
+    for q in QUERIES:
+        feed = fetch_feed(google_news_rss_url(q))
+        n = collect(feed, seen_titles, items, "google") if feed else 0
+        print(f"[Google] 「{q}」抓到 {n} 条 (该源共返回 {len(feed.entries) if feed else 0} 条)")
+
+    # 补充:再抓一遍必应(若有内容则一并纳入,通常较少)
+    for q in QUERIES:
+        feed = fetch_feed(bing_news_rss_url(q))
+        n = collect(feed, seen_titles, items, "bing") if feed else 0
+        print(f"[必应] 「{q}」补充 {n} 条")
 
     print(f"[信息] 共抓取到 {len(items)} 条原始新闻")
     return items
@@ -258,12 +290,15 @@ def is_domestic(it) -> bool:
 
 
 def _card(it):
-    title = html.escape(it.get("title_zh", ""))
+    raw_title = it.get("title_zh", "")
+    title = html.escape(raw_title)
     summary = html.escape(it.get("summary_zh", ""))
     region = html.escape(it.get("region", "") or "全球")
     source = html.escape(it.get("source", "") or "")
     published = html.escape(it.get("published", "") or "")
-    link = html.escape(it.get("link", "") or "#")
+    # 用标题做百度搜索链接,国内可直接打开,基本第一条即原文
+    baidu = "https://www.baidu.com/s?wd=" + urllib.parse.quote(raw_title)
+    link = html.escape(baidu)
     scope = "domestic" if is_domestic(it) else "intl"
 
     meta_bits = []
@@ -478,8 +513,8 @@ def render_html(items, generated_at, degraded=False):
     </main>
 
     <footer>
-      <div class="big">数据来源:必应新闻聚合 · AI 自动整理</div>
-      所有内容均来自公开新闻报道,点击各条「查看原文」可跳转至原始来源核实。<br>
+      <div class="big">数据来源:Google News 聚合 · AI 自动整理</div>
+      所有内容均来自公开新闻报道,点击「查看原文」将通过百度搜索定位原文,便于核实。<br>
       本页由自动化程序每日生成,仅供行业信息参考。
     </footer>
   </div>
