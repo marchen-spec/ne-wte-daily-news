@@ -27,9 +27,9 @@ import urllib.parse
 # ----------------------------------------------------------------------------
 # 配置
 # ----------------------------------------------------------------------------
-LLM_API_KEY = os.environ.get("LLM_API_KEY", "").strip()
-LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.deepseek.com").rstrip("/")
-LLM_MODEL = os.environ.get("LLM_MODEL", "deepseek-chat")
+LLM_API_KEY = (os.environ.get("LLM_API_KEY") or "").strip()
+LLM_BASE_URL = (os.environ.get("LLM_BASE_URL") or "https://api.deepseek.com").strip().rstrip("/")
+LLM_MODEL = (os.environ.get("LLM_MODEL") or "deepseek-chat").strip()
 
 # 抓取关键词(以中文为主,链接多为国内可直接打开的中文网站)。可自行增删。
 QUERIES = [
