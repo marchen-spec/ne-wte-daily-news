@@ -134,6 +134,64 @@ def link_is_china_accessible(url: str) -> bool:
     return not any(f in host for f in FOREIGN_HOSTS)
 
 
+def _batchexecute_resolve(url, session):
+    """用 Google 自己的接口把新版加密链接还原成真实网址。"""
+    import json
+    r = session.get(url, headers={"User-Agent": BROWSER_UA}, timeout=20)
+    if "news.google.com" not in r.url:      # 已被直接重定向到原文
+        return r.url
+    text = r.text
+    sig = re.search(r'data-n-a-sg="([^"]+)"', text)
+    ts = re.search(r'data-n-a-ts="([^"]+)"', text)
+    m = re.search(r'/(?:articles|read)/([^?/]+)', url)
+    if not (sig and ts and m):
+        return None
+    inner = [
+        "garturlreq",
+        [["X", "X", ["X", "X"], None, None, 1, 1, "US:en", None, 1,
+          None, None, None, None, None, 0, 1],
+         "X", "X", 1, [1, 1, 1], 1, 1, None, 0, 0, None, 0],
+        m.group(1), int(ts.group(1)), sig.group(1),
+    ]
+    freq = [[["Fbv4je", json.dumps(inner), None, "generic"]]]
+    resp = session.post(
+        "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+        data={"f.req": json.dumps(freq)},
+        headers={"User-Agent": BROWSER_UA,
+                 "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+        timeout=20,
+    )
+    m2 = re.search(r'\\"(https?://[^\\"]+)\\"', resp.text)
+    if m2:
+        try:
+            return m2.group(1).encode("utf-8").decode("unicode_escape")
+        except Exception:
+            return m2.group(1)
+    return None
+
+
+def resolve_links(items):
+    """对最终条目逐条把 Google 链接解析为真实网址;失败或纯外媒则置空(渲染回退百度搜索)。"""
+    import requests
+    session = requests.Session()
+    for it in items:
+        link = it.get("link", "") or ""
+        if "news.google.com" not in link:
+            it["link"] = link if link_is_china_accessible(link) else ""
+            continue
+        real = decode_google_news_url(link)
+        if not real:
+            try:
+                real = _batchexecute_resolve(link, session)
+            except Exception as e:
+                print(f"[警告] 链接解析失败: {e}")
+                real = None
+        it["link"] = real if (real and link_is_china_accessible(real)) else ""
+    resolved = sum(1 for it in items if it.get("link"))
+    print(f"[信息] {resolved}/{len(items)} 条已解析为真实链接,其余回退百度搜索")
+    return items
+
+
 def resolve_link(link: str) -> str:
     """必应有时用 bing.com/...url=真实地址 跳转,这里把真实地址还原出来。"""
     if not link:
@@ -206,21 +264,12 @@ def fetch_raw_items():
                 continue
 
             raw = getattr(entry, "link", "")
-            # 优先把 Google 跳转链解码成真实文章网址;其次还原必应跳转
-            direct = decode_google_news_url(raw) or resolve_link(raw)
-            if direct and "news.google.com" in direct:
-                direct = ""
-            # 只有国内能直接打开的真实链接才保留,否则置空(渲染时回退百度搜索)
-            link = direct if link_is_china_accessible(direct) else ""
+            # 必应跳转先还原;Google 链接先原样保留,稍后统一解析为真实网址
+            link = resolve_link(raw)
 
             source = ""
             if getattr(entry, "source", None) and getattr(entry.source, "title", None):
                 source = clean_text(entry.source.title)
-            if not source and link:
-                try:
-                    source = urllib.parse.urlparse(link).netloc.replace("www.", "")
-                except Exception:
-                    source = ""
 
             seen_titles.add(key)
             items.append({
@@ -630,6 +679,10 @@ def main():
             print(f"[警告] AI 调用失败,启用兜底方案: {e}")
             items = fallback_items(raw)
             degraded = True
+
+    # 把 Google 链接解析成可在国内直达的真实网址
+    if items:
+        items = resolve_links(items)
 
     html_out = render_html(items, generated_at, degraded=degraded)
     with open("index.html", "w", encoding="utf-8") as f:
